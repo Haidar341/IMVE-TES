@@ -4,7 +4,6 @@ public class PlayerMovement : MonoBehaviour
 {
     public float moveSpeed = 5f; // Kecepatan bergerak
     public float mouseSensitivity = 100f; // Sensitivitas mouse
-    public Transform cameraTransform; // Transform kamera
     public float jumpHeight = 2f; // Tinggi lompatan
     public float gravity = -9.81f; // Gaya gravitasi
 
@@ -45,17 +44,16 @@ public class PlayerMovement : MonoBehaviour
         Vector3 moveDirection = transform.right * horizontal + transform.forward * vertical;
         characterController.Move(moveDirection * moveSpeed * Time.deltaTime);
 
-        // Rotasi kamera dengan mouse
+        // Rotasi horizontal dan vertikal pemain dengan mouse
         float mouseX = Input.GetAxis("Mouse X") * mouseSensitivity * Time.deltaTime;
         float mouseY = Input.GetAxis("Mouse Y") * mouseSensitivity * Time.deltaTime;
 
-        // Membatasi rotasi vertikal kamera menggunakan topClamp dan bottomClamp
+        // Membatasi rotasi vertikal
         xRotation -= mouseY;
         xRotation = Mathf.Clamp(xRotation, topClamp, bottomClamp);
 
-        // Mengatur rotasi kamera dan player
-        cameraTransform.localRotation = Quaternion.Euler(xRotation, 0f, 0f);
-        transform.Rotate(Vector3.up * mouseX);
+        // Terapkan rotasi horizontal dan vertikal ke pemain
+        transform.localRotation = Quaternion.Euler(xRotation, transform.eulerAngles.y + mouseX, 0f);
 
         // Lompatan
         if (Input.GetButtonDown("Jump") && isGrounded)
