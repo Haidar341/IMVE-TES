@@ -1,10 +1,10 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using TMPro;
 
 public class Weapon : MonoBehaviour
 {
-    public Camera playerCamera;
     public bool isShooting, readyToShoot;
     bool allowReset = true;
     public float shootingDelay = 2f;
@@ -15,7 +15,11 @@ public class Weapon : MonoBehaviour
     public Transform bulletSpawn;
     public float bulletVelocity = 30;
     public float bulletPrefabLifeTime = 3f;
-
+    public GameObject muzzleEffect;
+    private Animator animator;
+    public float reloadTime;
+    public int magazineSize, bulletsLeft;
+    public bool isReloading;
     public enum ShootingMode
     {
         Single,
@@ -29,30 +33,66 @@ public class Weapon : MonoBehaviour
     {
         readyToShoot = true;
         burstBulletsLeft = bulletPerBurst;
+        animator = GetComponent<Animator>();
+
+        bulletsLeft = magazineSize; // Fix typo
     }
 
     void Update()
     {
+        if (bulletsLeft == 0 && isShooting)
+        {
+            SoundManager.Instance.emptySound1911.Play();
+        }
+
         if (currentShootingMode == ShootingMode.Auto)
         {
             // Holding Left Mouse
             isShooting = Input.GetKey(KeyCode.Mouse0);
         }
         else if (currentShootingMode == ShootingMode.Single || 
-                currentShootingMode == ShootingMode.Burst) 
+                 currentShootingMode == ShootingMode.Burst) 
         {
-            //Click Once
+            // Click Once
             isShooting = Input.GetKeyDown(KeyCode.Mouse0);
         }
-        if (readyToShoot && isShooting)
+
+        if (Input.GetKeyDown(KeyCode.R) && bulletsLeft < magazineSize && isReloading == false)
+        {
+            Reload();
+        }
+
+        // Automatic Reload
+        if (readyToShoot && isShooting == false && isReloading == false && bulletsLeft <= 0)
+        {
+            //Reload();
+        }
+
+        if (readyToShoot && isShooting && bulletsLeft > 0)
         {
             burstBulletsLeft = bulletPerBurst;
             FireWeapon();
+        }
+
+        if (AmmoManager.Instance.ammoDisplay != null)
+        {
+            AmmoManager.Instance.ammoDisplay.text = $"{bulletsLeft/bulletPerBurst}/{magazineSize/bulletPerBurst}";
         }
     }
 
     private void FireWeapon()
     {
+        bulletsLeft--;
+
+        // Ensure muzzleEffect exists and has a ParticleSystem component
+        if (muzzleEffect != null && muzzleEffect.TryGetComponent<ParticleSystem>(out var particleSystem))
+        {
+            particleSystem.Play();
+            animator.SetTrigger("RECOIL");
+
+            SoundManager.Instance.shootingSound1911.Play();
+        }
+
         readyToShoot = false;
 
         Vector3 shootingDirection = CalculateDirectionAndSpread().normalized;
@@ -78,6 +118,20 @@ public class Weapon : MonoBehaviour
         }
     }
 
+    private void Reload()
+    {
+        animator.SetTrigger("RELOAD");
+        SoundManager.Instance.reloadSound1911.Play();
+        isReloading = true;
+        Invoke("ReloadCompleted", reloadTime);
+    }
+
+    private void ReloadCompleted()
+    {
+        bulletsLeft = magazineSize;
+        isReloading = false;
+    }
+
     private void ResetShot()
     {
         readyToShoot = true;
@@ -86,7 +140,7 @@ public class Weapon : MonoBehaviour
 
     public Vector3 CalculateDirectionAndSpread()
     {
-        Ray ray = playerCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0));
+        Ray ray = Camera.main.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0));
         RaycastHit hit;
 
         Vector3 targetPoint;
@@ -102,14 +156,14 @@ public class Weapon : MonoBehaviour
         Vector3 direction = targetPoint - bulletSpawn.position;
 
         float x = UnityEngine.Random.Range(-spreadIntensity, spreadIntensity);
-        float y = UnityEngine.Random.Range(-spreadIntensity,spreadIntensity);
+        float y = UnityEngine.Random.Range(-spreadIntensity, spreadIntensity);
 
         return direction + new Vector3(x, y, 0);
     }
 
     private IEnumerator DestroyBulletAfterTime(GameObject bullet, float delay)
     {
-        yield return new WaitForSeconds( delay );
+        yield return new WaitForSeconds(delay);
         Destroy(bullet);
     }
 }
