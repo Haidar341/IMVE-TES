@@ -20,6 +20,14 @@ public class Weapon : MonoBehaviour
     public float reloadTime;
     public int magazineSize, bulletsLeft;
     public bool isReloading;
+
+    public enum WeaponModel
+    {
+        M1911,
+        M4
+    }
+
+    public WeaponModel thisWeaponModel;
     public enum ShootingMode
     {
         Single,
@@ -40,11 +48,6 @@ public class Weapon : MonoBehaviour
 
     void Update()
     {
-        if (bulletsLeft == 0 && isShooting)
-        {
-            SoundManager.Instance.emptySound1911.Play();
-        }
-
         if (currentShootingMode == ShootingMode.Auto)
         {
             // Holding Left Mouse
@@ -80,51 +83,62 @@ public class Weapon : MonoBehaviour
         }
     }
 
-    private void FireWeapon()
-    {
-        bulletsLeft--;
+private void FireWeapon()
+{
+    bulletsLeft--;
 
-        // Ensure muzzleEffect exists and has a ParticleSystem component
-        if (muzzleEffect != null && muzzleEffect.TryGetComponent<ParticleSystem>(out var particleSystem))
+    // Kunci posisi senjata sebelum menembak
+    Vector3 originalPosition = transform.localPosition;
+    Quaternion originalRotation = transform.localRotation;
+
+    if (muzzleEffect != null && muzzleEffect.TryGetComponent<ParticleSystem>(out var particleSystem))
+    {
+        particleSystem.Play();
+        if (animator != null)
         {
-            particleSystem.Play();
             animator.SetTrigger("RECOIL");
-
-            SoundManager.Instance.shootingSound1911.Play();
         }
-
-        readyToShoot = false;
-
-        Vector3 shootingDirection = CalculateDirectionAndSpread().normalized;
-
-        GameObject bullet = Instantiate(bulletPrefab, bulletSpawn.position, Quaternion.identity);
-
-        bullet.transform.forward = shootingDirection;
-
-        bullet.GetComponent<Rigidbody>().AddForce(shootingDirection * bulletVelocity, ForceMode.Impulse);
-
-        StartCoroutine(DestroyBulletAfterTime(bullet, bulletPrefabLifeTime));
-
-        if (allowReset)
-        {
-            Invoke("ResetShot", shootingDelay);
-            allowReset = false;
-        }
-
-        if (currentShootingMode == ShootingMode.Burst && burstBulletsLeft > 1)
-        {
-            burstBulletsLeft--;
-            Invoke("FireWeapon", shootingDelay);
-        }
+        SoundManager.Instance.PlayShootingSound(thisWeaponModel);
     }
 
-    private void Reload()
+    readyToShoot = false;
+
+    Vector3 shootingDirection = CalculateDirectionAndSpread().normalized;
+    GameObject bullet = Instantiate(bulletPrefab, bulletSpawn.position, Quaternion.identity);
+    bullet.transform.forward = shootingDirection;
+    bullet.GetComponent<Rigidbody>().AddForce(shootingDirection * bulletVelocity, ForceMode.Impulse);
+
+    StartCoroutine(DestroyBulletAfterTime(bullet, bulletPrefabLifeTime));
+
+    // Kembalikan posisi senjata setelah menembak
+    transform.localPosition = originalPosition;
+    transform.localRotation = originalRotation;
+
+    if (allowReset)
     {
-        animator.SetTrigger("RELOAD");
-        SoundManager.Instance.reloadSound1911.Play();
-        isReloading = true;
-        Invoke("ReloadCompleted", reloadTime);
+        Invoke("ResetShot", shootingDelay);
+        allowReset = false;
     }
+
+    if (currentShootingMode == ShootingMode.Burst && burstBulletsLeft > 1)
+    {
+        burstBulletsLeft--;
+        Invoke("FireWeapon", shootingDelay);
+    }
+}
+
+
+private void Reload()
+{
+    animator.SetTrigger("RELOAD");
+
+    // Mainkan suara reload sesuai tipe senjata
+    SoundManager.Instance.PlayReloadSound(thisWeaponModel);
+
+    isReloading = true;
+    Invoke("ReloadCompleted", reloadTime);
+}
+
 
     private void ReloadCompleted()
     {
