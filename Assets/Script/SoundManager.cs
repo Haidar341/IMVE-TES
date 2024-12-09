@@ -18,6 +18,9 @@ public class SoundManager : MonoBehaviour
     public AudioSource reloadSoundM4;
     public AudioSource reloadSound1911;
     public AudioSource emptySound;
+    public AudioSource destroySound;
+    public AudioClip weaponDestroyClip;
+
 
     private void Awake()
     {
@@ -29,6 +32,10 @@ public class SoundManager : MonoBehaviour
         {
             Instance = this;
         }
+    }
+    public void PlayWeaponDestroySound()
+    {
+    destroySound.PlayOneShot(weaponDestroyClip);
     }
 
     public void PlayEmptySound()
