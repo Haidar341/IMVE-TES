@@ -33,22 +33,20 @@ public class WeaponManager : MonoBehaviour
 
     private void Update()
     {
-        // Perbarui status slot senjata
         foreach (GameObject weaponSlot in weaponSlots)
         {
             if (weaponSlot == activeWeaponSlot)
             {
                 weaponSlot.SetActive(true);
-                UpdateWeaponAnimator(weaponSlot, true); // Aktifkan animator pada senjata di slot aktif
+                UpdateWeaponAnimator(weaponSlot, true);
             }
             else
             {
                 weaponSlot.SetActive(false);
-                UpdateWeaponAnimator(weaponSlot, false); // Nonaktifkan animator pada senjata di slot tidak aktif
+                UpdateWeaponAnimator(weaponSlot, false);
             }
         }
 
-        // Ganti slot aktif berdasarkan input
         if (Input.GetKeyDown(KeyCode.Alpha1))
         {
             SwitchActivationSlot(0);
@@ -59,95 +57,38 @@ public class WeaponManager : MonoBehaviour
         }
     }
 
-    public void PickupWeapon(GameObject pickedupWeapon)
+   public void PickupWeapon(GameObject pickedupWeapon)
+{
+    // Cari slot kosong terlebih dahulu
+    GameObject emptySlot = weaponSlots.Find(slot => slot.transform.childCount == 0);
+
+    if (emptySlot != null)
     {
+        // Jika ada slot kosong, tambahkan senjata ke slot kosong
+        AddWeaponToSlot(pickedupWeapon, emptySlot);
+
+        // Langsung set slot kosong ini sebagai aktif
+        SetSlotAsActive(emptySlot);
+    }
+    else
+    {
+        // Jika tidak ada slot kosong, tambahkan ke slot aktif
         AddWeaponIntoActiveSlot(pickedupWeapon);
-
-        // Perbarui UI durability untuk senjata baru
-        Weapon weapon = pickedupWeapon.GetComponent<Weapon>();
-        if (weapon != null)
-        {
-            DurabilityManager.Instance.ResetDurabilityDisplay(weapon.durability);
-        }
     }
 
-    private void AddWeaponIntoActiveSlot(GameObject pickedupWeapon)
+    // Perbarui UI durability untuk senjata baru
+    Weapon weapon = pickedupWeapon.GetComponent<Weapon>();
+    if (weapon != null)
     {
-        DropCurrentWeapon();
-
-        pickedupWeapon.transform.SetParent(activeWeaponSlot.transform, false);
-
-        Weapon weapon = pickedupWeapon.GetComponent<Weapon>();
-
-        pickedupWeapon.transform.localPosition = new Vector3(weapon.spawnPosition.x, weapon.spawnPosition.y, weapon.spawnPosition.z);
-        pickedupWeapon.transform.localRotation = Quaternion.Euler(weapon.spawnRotation.x, weapon.spawnRotation.y, weapon.spawnRotation.z);
-
-        weapon.isActiveWeapon = true;
-
-        // Aktifkan animator pada senjata yang baru diambil
-        if (weapon.animator != null)
-        {
-            weapon.animator.enabled = true;
-        }
+        DurabilityManager.Instance.ResetDurabilityDisplay(weapon.durability);
     }
+}
 
-    internal void PickupAmmo(AmmoBox ammo)
-    { 
-        switch (ammo. ammoType)
-        {
-            case AmmoBox.AmmoType.PistolAmmo:
-                totalPistolAmmo += ammo.ammoAmount;
-                break;
-            case AmmoBox.AmmoType.RifleAmmo:
-                totalRifleAmmo += ammo.ammoAmount;
-                break ;
-        }
-    }
-
-    public void DropCurrentWeapon()
+private void SetSlotAsActive(GameObject slot)
+{
+    if (slot != null)
     {
-        if (activeWeaponSlot.transform.childCount > 0)
-        {
-            var weaponToDrop = activeWeaponSlot.transform.GetChild(0).gameObject;
-
-            Weapon weapon = weaponToDrop.GetComponent<Weapon>();
-
-            if (weapon != null)
-            {
-                // Nonaktifkan UI durability saat senjata dijatuhkan
-                DurabilityManager.Instance.SetDurabilityUIActive(false);
-
-                // Nonaktifkan animator pada senjata yang dijatuhkan
-                if (weapon.animator != null)
-                {
-                    weapon.animator.enabled = false;
-                }
-
-                weapon.isActiveWeapon = false;
-            }
-
-            // Hancurkan senjata yang sedang dipegang
-            Destroy(weaponToDrop);
-        }
-    }
-
-    public void SwitchActivationSlot(int slotNumber)
-    {
-        // Nonaktifkan senjata di slot aktif sebelumnya
-        if (activeWeaponSlot.transform.childCount > 0)
-        {
-            Weapon currentWeapon = activeWeaponSlot.transform.GetChild(0).GetComponent<Weapon>();
-            currentWeapon.isActiveWeapon = false;
-
-            // Nonaktifkan animator senjata sebelumnya
-            if (currentWeapon.animator != null)
-            {
-                currentWeapon.animator.enabled = false;
-            }
-        }
-
-        // Ganti slot aktif
-        activeWeaponSlot = weaponSlots[slotNumber];
+        activeWeaponSlot = slot;
 
         // Aktifkan senjata di slot baru jika ada
         if (activeWeaponSlot.transform.childCount > 0)
@@ -164,9 +105,112 @@ public class WeaponManager : MonoBehaviour
             // Perbarui UI durability dengan durabilitas senjata baru
             DurabilityManager.Instance.ResetDurabilityDisplay(newWeapon.durability);
         }
+    }
+}
+
+
+    private void AddWeaponIntoActiveSlot(GameObject pickedupWeapon)
+    {
+        DropCurrentWeapon();
+
+        pickedupWeapon.transform.SetParent(activeWeaponSlot.transform, false);
+
+        Weapon weapon = pickedupWeapon.GetComponent<Weapon>();
+
+        pickedupWeapon.transform.localPosition = new Vector3(weapon.spawnPosition.x, weapon.spawnPosition.y, weapon.spawnPosition.z);
+        pickedupWeapon.transform.localRotation = Quaternion.Euler(weapon.spawnRotation.x, weapon.spawnRotation.y, weapon.spawnRotation.z);
+
+        weapon.isActiveWeapon = true;
+
+        if (weapon.animator != null)
+        {
+            weapon.animator.enabled = true;
+        }
+    }
+
+    private void AddWeaponToSlot(GameObject pickedupWeapon, GameObject targetSlot)
+    {
+        pickedupWeapon.transform.SetParent(targetSlot.transform, false);
+
+        Weapon weapon = pickedupWeapon.GetComponent<Weapon>();
+
+        pickedupWeapon.transform.localPosition = new Vector3(weapon.spawnPosition.x, weapon.spawnPosition.y, weapon.spawnPosition.z);
+        pickedupWeapon.transform.localRotation = Quaternion.Euler(weapon.spawnRotation.x, weapon.spawnRotation.y, weapon.spawnRotation.z);
+
+        weapon.isActiveWeapon = false;
+
+        if (weapon.animator != null)
+        {
+            weapon.animator.enabled = false;
+        }
+    }
+
+    internal void PickupAmmo(AmmoBox ammo)
+    { 
+        switch (ammo.ammoType)
+        {
+            case AmmoBox.AmmoType.PistolAmmo:
+                totalPistolAmmo += ammo.ammoAmount;
+                break;
+            case AmmoBox.AmmoType.RifleAmmo:
+                totalRifleAmmo += ammo.ammoAmount;
+                break;
+        }
+    }
+
+    public void DropCurrentWeapon()
+    {
+        if (activeWeaponSlot.transform.childCount > 0)
+        {
+            var weaponToDrop = activeWeaponSlot.transform.GetChild(0).gameObject;
+
+            Weapon weapon = weaponToDrop.GetComponent<Weapon>();
+
+            if (weapon != null)
+            {
+                DurabilityManager.Instance.SetDurabilityUIActive(false);
+
+                if (weapon.animator != null)
+                {
+                    weapon.animator.enabled = false;
+                }
+
+                weapon.isActiveWeapon = false;
+            }
+
+            Destroy(weaponToDrop);
+        }
+    }
+
+    public void SwitchActivationSlot(int slotNumber)
+    {
+        if (activeWeaponSlot.transform.childCount > 0)
+        {
+            Weapon currentWeapon = activeWeaponSlot.transform.GetChild(0).GetComponent<Weapon>();
+            currentWeapon.isActiveWeapon = false;
+
+            if (currentWeapon.animator != null)
+            {
+                currentWeapon.animator.enabled = false;
+            }
+        }
+
+        activeWeaponSlot = weaponSlots[slotNumber];
+
+        if (activeWeaponSlot.transform.childCount > 0)
+        {
+            Weapon newWeapon = activeWeaponSlot.transform.GetChild(0).GetComponent<Weapon>();
+            newWeapon.isActiveWeapon = true;
+
+            if (newWeapon.animator != null)
+            {
+                newWeapon.animator.enabled = true;
+            }
+
+            DurabilityManager.Instance.ResetDurabilityDisplay(newWeapon.durability);
+        }
         else
         {
-            // Nonaktifkan UI durability jika slot kosong
             DurabilityManager.Instance.SetDurabilityUIActive(false);
         }
     }
@@ -183,31 +227,31 @@ public class WeaponManager : MonoBehaviour
         }
     }
 
-internal void DecreaseTotalAmmo(int bulletsToDecrease, Weapon.WeaponModel thisWeaponModel)
-{
-    switch (thisWeaponModel)
+    internal void DecreaseTotalAmmo(int bulletsToDecrease, Weapon.WeaponModel thisWeaponModel)
     {
-        case Weapon.WeaponModel.M4:
-            totalRifleAmmo -= bulletsToDecrease;
-            break;
-        case Weapon.WeaponModel.M1911:
-            totalPistolAmmo -= bulletsToDecrease;
-            break;
+        switch (thisWeaponModel)
+        {
+            case Weapon.WeaponModel.M4:
+                totalRifleAmmo -= bulletsToDecrease;
+                break;
+            case Weapon.WeaponModel.M1911:
+                totalPistolAmmo -= bulletsToDecrease;
+                break;
+        }
     }
-}
 
-public int CheckAmmoLeftFor(Weapon.WeaponModel thisWeaponModel)
-{
-    switch (thisWeaponModel)
+    public int CheckAmmoLeftFor(Weapon.WeaponModel thisWeaponModel)
     {
-        case Weapon.WeaponModel.M4:
-            return totalRifleAmmo;
+        switch (thisWeaponModel)
+        {
+            case Weapon.WeaponModel.M4:
+                return totalRifleAmmo;
 
-        case Weapon.WeaponModel.M1911:
-            return totalPistolAmmo;
+            case Weapon.WeaponModel.M1911:
+                return totalPistolAmmo;
 
-        default:
-            return 0;
+            default:
+                return 0;
+        }
     }
-}
 }
