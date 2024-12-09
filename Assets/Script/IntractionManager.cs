@@ -7,6 +7,7 @@ public class IntractionManager : MonoBehaviour
     public static IntractionManager Instance { get; set; }
 
     public Weapon hoveredWeapon = null;
+    public AmmoBox hoveredAmmoBox = null;
     public float maxRayDistance = 5f; // Jarak maksimum raycast
 
     private void Awake()
@@ -32,7 +33,7 @@ public class IntractionManager : MonoBehaviour
         {
             GameObject objectHitByRaycast = hit.transform.gameObject;
 
-            // Jika objek memiliki komponen Weapon
+            // ** Weapon Logic **
             if (objectHitByRaycast.GetComponent<Weapon>() && objectHitByRaycast.GetComponent<Weapon>().isActiveWeapon == false)
             {
                 if (hoveredWeapon != null && hoveredWeapon != objectHitByRaycast.GetComponent<Weapon>())
@@ -47,7 +48,7 @@ public class IntractionManager : MonoBehaviour
 
                 if (Input.GetKeyDown(KeyCode.F))
                 {
-                WeaponManager.Instance.PickupWeapon(objectHitByRaycast.gameObject);
+                    WeaponManager.Instance.PickupWeapon(objectHitByRaycast.gameObject);
                 }
             }
             else
@@ -59,14 +60,49 @@ public class IntractionManager : MonoBehaviour
                     hoveredWeapon = null;
                 }
             }
+
+            // ** AmmoBox Logic **
+            if (objectHitByRaycast.GetComponent<AmmoBox>())
+            {
+                if (hoveredAmmoBox != null && hoveredAmmoBox != objectHitByRaycast.GetComponent<AmmoBox>())
+                {
+                    // Nonaktifkan outline pada ammo box sebelumnya
+                    hoveredAmmoBox.GetComponent<Outline>().enabled = false;
+                }
+
+                // Tetapkan ammo box yang baru dan aktifkan outline
+                hoveredAmmoBox = objectHitByRaycast.GetComponent<AmmoBox>();
+                hoveredAmmoBox.GetComponent<Outline>().enabled = true;
+
+                if (Input.GetKeyDown(KeyCode.F))
+                {
+                    WeaponManager.Instance.PickupAmmo(hoveredAmmoBox);
+                    Destroy(objectHitByRaycast.gameObject);
+                }
+            }
+            else
+            {
+                // Jika objek bukan ammo box, nonaktifkan outline dari ammo box yang dihover sebelumnya
+                if (hoveredAmmoBox != null)
+                {
+                    hoveredAmmoBox.GetComponent<Outline>().enabled = false;
+                    hoveredAmmoBox = null;
+                }
+            }
         }
         else
         {
-            // Jika tidak ada hit, pastikan outline weapon terakhir dimatikan
+            // Jika tidak ada hit, pastikan outline terakhir dimatikan
             if (hoveredWeapon != null)
             {
                 hoveredWeapon.GetComponent<Outline>().enabled = false;
                 hoveredWeapon = null;
+            }
+
+            if (hoveredAmmoBox != null)
+            {
+                hoveredAmmoBox.GetComponent<Outline>().enabled = false;
+                hoveredAmmoBox = null;
             }
         }
     }

@@ -40,7 +40,7 @@ public class HUDManager : MonoBehaviour
         {
             // Update ammo UI
             magazineAmmoUI.text = $"{activeWeapon.bulletsLeft / activeWeapon.bulletPerBurst}";
-            totalAmmoUI.text = $"{activeWeapon.magazineSize / activeWeapon.bulletPerBurst}";
+            totalAmmoUI.text = $"{WeaponManager.Instance.CheckAmmoLeftFor(activeWeapon.thisWeaponModel)}";
 
             // Update ammo type UI
             ammoTypeUI.sprite = GetAmmoSprite(activeWeapon.thisWeaponModel);
